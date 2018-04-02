@@ -3,7 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include <time.h>
+
 
 pthread_mutex_t *mtxs;
 pthread_cond_t *condxs;
@@ -23,26 +25,46 @@ struct mArg *mArgs;
 void* printer(void* p) {
     time_t startTime;
     startTime = time(NULL);
-    char esc[5];
-    char esc2[5];    
+    int BufSize = 12;
+    char buf[BufSize];
 
-    esc[0] = 27;
-    esc[1] = '[';
-    esc[2] = 'H';
-    
-    esc2[0] = 27;
-    esc2[1] = '[';
-    esc2[2] = '2';
-    esc2[3] = 'J';
+    printf("\033[2J");        
     
     while(1) {
-        write(1, esc2, 4);        
-        write(1, esc, 4);
+        sprintf(buf, "\033[s\033[H");
+        write(1, buf, 6);
         for (int i = 0; i < N; i++){
-            printf("%d ", activeDet[i]);
+            for (int i = 0; i < BufSize; i++) {
+                buf[i] = '\0';
+            }
+            if (!activeDet[i]) {
+                write(1, "*", 1);
+            }
+            else {
+                sprintf(buf, "%d", activeDet[i]);
+                write(1, buf, strlen(buf));
+
+            }
+            if (i != N - 1) {
+                write(1, " - ", 3);
+            }
         }
-        printf("%3ld\n", time(NULL) - startTime);
-        sleep(1);
+        for (int i = 0; i < BufSize; i++) {
+            buf[i] = '\0';
+        }
+        sprintf(buf, "  [ %03lds ]\033[u", time(NULL) - startTime);
+        write(1, buf, strlen(buf));        
+        if(done) {
+            int notAllDone = 0;
+            for(int i = 0; i < N; i++) {
+                notAllDone += activeDet[i];
+            }
+            if (!notAllDone) {
+                pthread_exit(0);
+            }            
+        }
+        usleep(100000);
+        
     }
 }
 
@@ -148,16 +170,6 @@ int main() {
         exit(1);
     }
 
-    if((prodNum = (int*)calloc(N, sizeof(int))) == NULL) {
-        printf("Memory is not allocated.\n");
-        exit(1);
-    }
-
-    if((activeDet = (int*)calloc(N, sizeof(int))) == NULL) {
-        printf("Memory is not allocated.\n");
-        exit(1);
-    }
-
     for(int i = 0, num = 0; i < N * M; i++){
         if(fscanf(cnfFile, "%d", &num) == EOF) {
             fclose(cnfFile);
@@ -167,6 +179,16 @@ int main() {
         productivity[i] = num;
     }
     fclose(cnfFile);
+
+    if((prodNum = (int*)calloc(N, sizeof(int))) == NULL) {
+        printf("Memory is not allocated.\n");
+        exit(1);
+    }
+
+    if((activeDet = (int*)calloc(N, sizeof(int))) == NULL) {
+        printf("Memory is not allocated.\n");
+        exit(1);
+    }
 
     if((mtxs = (pthread_mutex_t*)calloc(N, sizeof(pthread_mutex_t))) == NULL) {
         printf("Memory is not allocated.\n");
@@ -236,8 +258,15 @@ int main() {
     done = 1;
     pthread_mutex_unlock(&(mtxs[0]));
     pthread_join(pthrs[N - 1], NULL);
+    sleep(1);
+
     free(mtxs);
     free(condxs);
+    free(pthrs);
+    free(mArgs);
     free(productivity);
+    free(prodNum);
+    free(activeDet);
+    
     return 0;
 }
