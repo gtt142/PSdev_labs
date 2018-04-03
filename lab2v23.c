@@ -11,7 +11,6 @@ pthread_mutex_t *mtxs;
 pthread_cond_t *condxs;
 int *productivity;
 int *prodNum;
-int *activeDet;
 int M, N;
 int done = 0;
 
@@ -22,44 +21,6 @@ struct mArg {
 
 struct mArg *mArgs;
 
-void* printer(void* p) {
-    time_t startTime;
-    startTime = time(NULL);
-    char buf[16];
-
-    printf("\033[2J");        
-    
-    while(1) {
-        sprintf(buf, "\033[s\033[H");
-        write(1, buf, 6);
-        for (int i = 0; i < N; i++){
-            if (!activeDet[i]) {
-                write(1, "*", 1);
-            }
-            else {
-                sprintf(buf, "%d", activeDet[i]);
-                write(1, buf, strlen(buf));
-
-            }
-            if (i != N - 1) {
-                write(1, " --> ", 5);
-            }
-        }
-        sprintf(buf, "  [ %03lds ]\033[u", time(NULL) - startTime);
-        write(1, buf, strlen(buf));        
-        if(done) {
-            int notAllDone = 0;
-            for(int i = 0; i < N; i++) {
-                notAllDone += activeDet[i];
-            }
-            if (!notAllDone) {
-                pthread_exit(0);
-            }            
-        }
-        usleep(100000);
-        
-    }
-}
 
 void* midMachine(void* args) {
     struct mArg* arg = (struct mArg*) args;
@@ -71,9 +32,6 @@ void* midMachine(void* args) {
     
     while(1) {
         pthread_mutex_lock(&(mtxs[id - 1]));
-        if(id > 1) {
-            activeDet[id - 2] = 0;
-        }
         if(done) {
             int notAllDone = 0;
             for(int i = 0; i < N; i++) {
@@ -92,8 +50,7 @@ void* midMachine(void* args) {
         pthread_cond_signal(&(condxs[id - 1]));        
 
         sleepTime = productivity[(id - 1) * M + (detail - 1)];
-        // printf("[%d] -- %d\n", id, detail);
-        activeDet[id - 1] = detail;
+        printf("[%d] -- %d\n", id, detail);
         sleep(sleepTime);         
 
         prodNum[id] = detail;
@@ -111,9 +68,6 @@ void* lastMachine(void* args) {
     
     while(1) {
         pthread_mutex_lock(&(mtxs[id - 1]));
-        if(id > 1) {
-            activeDet[id - 2] = 0;
-        }
         if(done) {
             int notAllDone = 0;
             for(int i = 0; i < N; i++) {
@@ -131,10 +85,8 @@ void* lastMachine(void* args) {
         pthread_cond_signal(&(condxs[id - 1]));    
 
         sleepTime = productivity[(id - 1) * M + (detail - 1)];
-        // printf("[%d] -- %d\n", id, detail);
-        activeDet[id - 1] = detail;        
+        printf("[%d] -- %d\n", id, detail);      
         sleep(sleepTime);
-        activeDet[id - 1] = 0;
     }
 }
 
@@ -178,10 +130,6 @@ int main() {
         exit(1);
     }
 
-    if((activeDet = (int*)calloc(N, sizeof(int))) == NULL) {
-        printf("Memory is not allocated.\n");
-        exit(1);
-    }
 
     if((mtxs = (pthread_mutex_t*)calloc(N, sizeof(pthread_mutex_t))) == NULL) {
         printf("Memory is not allocated.\n");
@@ -224,13 +172,7 @@ int main() {
         perror("pthread_create\n");
     } 
     usleep(5000);
-////////////
-    pthread_t printerThr;
-    if( pthread_create(&printerThr, &pattr, printer, NULL) ) {
-        perror("pthread_create\n");
-    } 
-    usleep(5000);
-//////////////
+
     int detail, scanRes;
 
     while((scanRes = scanf("%d", &detail)) != EOF) {
@@ -260,7 +202,6 @@ int main() {
     free(mArgs);
     free(productivity);
     free(prodNum);
-    free(activeDet);
     
     return 0;
 }
