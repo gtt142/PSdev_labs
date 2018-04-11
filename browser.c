@@ -8,7 +8,7 @@
 
 #define BUF_SIZE 4096
 #define URL_LEN  128
-#define LINK_COUNT 100
+#define LINK_COUNT 128
 
 char domain[URL_LEN];
 char path[URL_LEN];
@@ -131,6 +131,11 @@ void visitLink(char* url) {
     sprintf(buffer, "GET /%s\nAccept: text/html", path);
     result = send(sock, buffer, strlen(buffer), 0);
 
+    if( shutdown(sock, 1) < 0) {
+            perror("Error calling shutdown");
+            exit (0);
+    }
+
     int printBufLen = 0;
     while(1) {
         memset(buffer, 0, BUF_SIZE);
@@ -144,10 +149,6 @@ void visitLink(char* url) {
         }
         memcpy((printBuf+printBufLen), buffer, result);
         printBufLen += result;
-    }
-    if( shutdown(sock, 1) < 0) {
-            perror("Error calling shutdown");
-            exit (0);
     }
     write(1, printBuf, strlen(printBuf));
     sprintf(buffer, "\nYou on: http://%s/%s\n\n", domain, path);
@@ -168,6 +169,7 @@ void printLinks(char* mainPage) {
     for (k = 0; links[k][0] != '\0'; k++) {
         printf("----------%d---------%s\n", k + 1, links[k]);
     }
+    write(1, "\"Ctrl-D\" for exit.\n",19);    
     linksCountInPage = k;
 }
 
