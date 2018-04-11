@@ -22,6 +22,7 @@ int sock;
 struct sockaddr_in serv;
 struct hostent *hp;
 
+
 void urlParse(char* url) {
     int i = 0;
     int j = 0;
@@ -46,6 +47,46 @@ void urlParse(char* url) {
         }
     }
     path[j] = '\0';
+}
+
+void parseTagLi() {
+    int pageLen = strlen(printBuf);
+    int inTagOl = 0;
+    int liCounter = 0;
+    
+    for (int i = 0; i < pageLen; i++) {
+	if(printBuf[i] == '<' && ( printBuf[i+1] == 'o' || printBuf[i+1] == 'O' || printBuf[i+1] == 'u' || printBuf[i+1] == 'U') && (printBuf[i+2] == 'l' || (printBuf[i+2] == 'L')) && !inTagOl) {
+            inTagOl = 1;
+	    liCounter = 0;
+        }
+        if(printBuf[i] == '<' && printBuf[i+1] == '/' && ( printBuf[i+2] == 'o' || printBuf[i+2] == 'O' || printBuf[i+2] == 'u' || printBuf[i+2] == 'U') && (printBuf[i+3] == 'l' || (printBuf[i+3] == 'L')) && inTagOl) {
+            inTagOl = 0;
+        }
+        
+        if(inTagOl && printBuf[i] == '<' && (printBuf[i+1] == 'l' || printBuf[i+1] == 'L') && (printBuf[i+2] == 'i' || printBuf[i+2] == 'I')) {
+	    liCounter++;
+	    sprintf(buffer, "%d", liCounter);
+	    int k = 0;
+	    while(k < (strlen(buffer)) && k < 4){
+		printBuf[i] = buffer[k];
+		i++;
+		k++;
+	    }
+	    while(k < 4) {
+		printBuf[i] = ' ';
+		i++;
+		k++;
+	    }
+	}
+	
+	if((inTagOl && printBuf[i] == '<' && printBuf[i+1] == '/' && (printBuf[i+2] == 'l' || printBuf[i+2] == 'L') && (printBuf[i+3] == 'i' || printBuf[i+3] == 'I'))) {
+	    while (printBuf[i] != '>') {
+		printBuf[i] = ' ';
+		i++;
+	    }
+	    printBuf[i] = ' ';
+	}
+    }
 }
 
 void parseTagA() {
@@ -102,8 +143,8 @@ void visitLink(char* url) {
             printf("%s\n", hstrerror(h_errno));
             exit(0);
         }
-        bzero((char*)&serv, sizeof(serv));
-        bcopy(hp->h_addr_list[0], (char*)&serv.sin_addr, hp->h_length);
+        memset((char*)&serv, 0, sizeof(serv));
+	memcpy((char*)&serv.sin_addr, hp->h_addr_list[0], hp->h_length);
         serv.sin_family = AF_INET;
         serv.sin_port = htons(80);
     }
@@ -150,6 +191,8 @@ void visitLink(char* url) {
         memcpy((printBuf+printBufLen), buffer, result);
         printBufLen += result;
     }
+    
+    parseTagLi();
     write(1, printBuf, strlen(printBuf));
     sprintf(buffer, "\nYou on: http://%s/%s\n\n", domain, path);
     write(1, buffer, strlen(buffer));
