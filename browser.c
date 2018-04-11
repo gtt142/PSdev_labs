@@ -200,15 +200,17 @@ int main(int argc, char* argv[]) {
             continue;
         }
         if (num < 0 || num > linksCountInPage) {
-            printf("Wrong input: min - %d; max - %d\n", 1, linksCountInPage);
+            printf("Wrong input: min - %d; max - %d\n", 0, linksCountInPage);
             continue;
         }
         if (num == 0) {
             visitLink(argv[1]);
             printLinks(argv[1]);
         }
-        visitLink(links[num - 1]);
-        printLinks(argv[1]);
+        else {
+            visitLink(links[num - 1]);
+            printLinks(argv[1]);
+        }
     }
     
     
