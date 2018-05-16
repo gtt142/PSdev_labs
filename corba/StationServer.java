@@ -5,7 +5,6 @@ import org.omg.CORBA.*;
 import org.omg.PortableServer.*;
 import org.omg.PortableServer.POA;
 import java.util.HashMap;
-import java.util.Collections;
 import java.util.Map;
 
  
@@ -26,6 +25,10 @@ class StationServant extends StationPOA {
   public int register (TubeCallback objRef, String phoneNum) {
      //tubeRef = objRef;
      //tubeNum = phoneNum;
+     if(tubeRefs.containsKey(phoneNum)) {
+        System.out.println("Number "+ phoneNum +" already registered");
+        return (-1);
+     }
      tubeRefs.put(phoneNum, objRef);
      System.out.println("Station: tube registered "+ phoneNum);
      return (1);
@@ -35,6 +38,11 @@ class StationServant extends StationPOA {
   public int sendSMS (String fromNum, String toNum, String message) {
     System.out.println("Station: tube "+fromNum+" send a message "+toNum);
     // ????? ?????? ???? ????? ????????? ?????? ?? ?????? toNum
+    TubeCallback tubeRef = tubeRefs.get(toNum);
+    if (tubeRef == null) {
+        System.out.println("Can't resolve a number: "+toNum);
+        return (-1);
+    }
     tubeRef.sendSMS(fromNum, message);
     return (1);
     };
