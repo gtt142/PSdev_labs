@@ -16,7 +16,7 @@ class TubeCallbackServant extends TubeCallbackPOA {
 
  // ????? ????????? ????????? ?????????
  public int sendSMS(String fromNum, String message) {
-    System.out.println(myNum+": received message from "+fromNum+": "+message);
+    System.out.println(myNum+": received message from "+fromNum+": \n"+message);
     return (0);
     };
  
@@ -88,11 +88,20 @@ public class Tube {
       
       String msg;
       while (true) {
+          StringBuilder text = new StringBuilder();        
           System.out.println("Write a message");
-        msg = inpt.readLine();
+          try {
+            msg = inpt.readLine();
+            while (msg != null) {
+              text.append(msg).append('\n');
+              msg = inpt.readLine();
+            }
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
         System.out.println("Write a receiver number");
         String num = inpt.readLine();
-        stationRef.sendSMS(myNum, num, msg);
+        stationRef.sendSMS(myNum, num, text.toString());
         // ???????? ????????: ????? ?????????? 7890 ? ????????? ?????
         // ?????????? ??????? ??????? ???? ?? ??????
         }

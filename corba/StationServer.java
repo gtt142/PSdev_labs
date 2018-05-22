@@ -43,7 +43,9 @@ class StationServant extends StationPOA {
         System.out.println("Can't resolve a number: "+toNum);
         return (-1);
     }
-    tubeRef.sendSMS(fromNum, message);
+    try {
+      tubeRef.sendSMS(fromNum, message);
+    } catch (Exception ignored) {}
     return (1);
     };
   };
